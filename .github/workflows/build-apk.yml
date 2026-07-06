@@ -44,7 +44,8 @@ jobs:
             echo "Scaffold already exists"
           fi
 
-      - name: Force compileSdk/targetSdk/minSdk/ndkVersion via subprojects override
+      - name: Append override script to settings.gradle
+        shell: bash
         run: |
           set -e
           SETTINGS="android/settings.gradle.kts"
@@ -56,39 +57,11 @@ jobs:
             exit 1
           fi
           echo "Appending override block to $SETTINGS"
-
-          # This block runs for every subproject including plugin modules
-          # like :vibration, :flutter_foreground_task etc.
-          cat >> "$SETTINGS" <<'EOF'
-
-// ---- Buzz CI override: force SDK/NDK versions across all modules ----
-gradle.allprojects {
-    afterEvaluate {
-        val androidExt = extensions.findByName("android")
-        if (androidExt != null) {
-            try {
-                val m = androidExt.javaClass.getMethod("setCompileSdkVersion", Int::class.javaPrimitiveType)
-                m.invoke(androidExt, 36)
-            } catch (_: Throwable) {}
-            try {
-                val defCfg = androidExt.javaClass.getMethod("getDefaultConfig").invoke(androidExt)
-                try {
-                    defCfg.javaClass.getMethod("setMinSdkVersion", Int::class.javaPrimitiveType).invoke(defCfg, 23)
-                } catch (_: Throwable) {}
-                try {
-                    defCfg.javaClass.getMethod("setTargetSdkVersion", Int::class.javaPrimitiveType).invoke(defCfg, 36)
-                } catch (_: Throwable) {}
-            } catch (_: Throwable) {}
-            try {
-                androidExt.javaClass.getMethod("setNdkVersion", String::class.java)
-                    .invoke(androidExt, "28.2.13676358")
-            } catch (_: Throwable) {}
-        }
-    }
-}
-EOF
+          cp override.gradle.kts /tmp/override.gradle.kts
+          echo "" >> "$SETTINGS"
+          cat /tmp/override.gradle.kts >> "$SETTINGS"
           echo "=== Tail of $SETTINGS ==="
-          tail -40 "$SETTINGS"
+          tail -50 "$SETTINGS"
 
       - name: Install dependencies
         run: flutter pub get
@@ -125,7 +98,7 @@ EOF
             Buzz Android APK
             - Commit: ${{ github.sha }}
             - Build: #${{ github.run_number }}
-            - 下载 `buzz_latest.apk` 直接安装到手机
+            - Download `buzz_latest.apk` and install on your Android phone.
           files: client/dist/*.apk
           fail_on_unmatched_files: true
         env:
