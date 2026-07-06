@@ -44,38 +44,51 @@ jobs:
             echo "Scaffold already exists"
           fi
 
-      - name: Bump Android compileSdk / targetSdk / minSdk / NDK
+      - name: Force compileSdk/targetSdk/minSdk/ndkVersion via subprojects override
         run: |
           set -e
-          GRADLE_FILE=""
-          if [ -f "android/app/build.gradle.kts" ]; then
-            GRADLE_FILE="android/app/build.gradle.kts"
-          elif [ -f "android/app/build.gradle" ]; then
-            GRADLE_FILE="android/app/build.gradle"
-          else
-            echo "No build.gradle found under android/app/"
+          SETTINGS="android/settings.gradle.kts"
+          if [ ! -f "$SETTINGS" ]; then
+            SETTINGS="android/settings.gradle"
+          fi
+          if [ ! -f "$SETTINGS" ]; then
+            echo "No settings.gradle(.kts) found"
             exit 1
           fi
-          echo "Patching $GRADLE_FILE"
+          echo "Appending override block to $SETTINGS"
 
-          # compileSdk / targetSdk -> 36 ; minSdk -> 23 ; ndkVersion -> 27.0.12077973
-          sed -i \
-            -e 's/compileSdk *= *flutter\.compileSdkVersion/compileSdk = 36/g' \
-            -e 's/compileSdkVersion *flutter\.compileSdkVersion/compileSdkVersion 36/g' \
-            -e 's/compileSdk *= *[0-9]\+/compileSdk = 36/g' \
-            -e 's/compileSdkVersion *[0-9]\+/compileSdkVersion 36/g' \
-            -e 's/targetSdk *= *flutter\.targetSdkVersion/targetSdk = 36/g' \
-            -e 's/targetSdkVersion *flutter\.targetSdkVersion/targetSdkVersion 36/g' \
-            -e 's/targetSdk *= *[0-9]\+/targetSdk = 36/g' \
-            -e 's/targetSdkVersion *[0-9]\+/targetSdkVersion 36/g' \
-            -e 's/minSdk *= *flutter\.minSdkVersion/minSdk = 23/g' \
-            -e 's/minSdkVersion *flutter\.minSdkVersion/minSdkVersion 23/g' \
-            -e 's/ndkVersion *= *flutter\.ndkVersion/ndkVersion = "27.0.12077973"/g' \
-            -e 's/ndkVersion *flutter\.ndkVersion/ndkVersion "27.0.12077973"/g' \
-            "$GRADLE_FILE"
+          # This block runs for every subproject including plugin modules
+          # like :vibration, :flutter_foreground_task etc.
+          cat >> "$SETTINGS" <<'EOF'
 
-          echo "=== Patched sections ==="
-          grep -nE 'compileSdk|targetSdk|minSdk|ndkVersion' "$GRADLE_FILE" || true
+// ---- Buzz CI override: force SDK/NDK versions across all modules ----
+gradle.allprojects {
+    afterEvaluate {
+        val androidExt = extensions.findByName("android")
+        if (androidExt != null) {
+            try {
+                val m = androidExt.javaClass.getMethod("setCompileSdkVersion", Int::class.javaPrimitiveType)
+                m.invoke(androidExt, 36)
+            } catch (_: Throwable) {}
+            try {
+                val defCfg = androidExt.javaClass.getMethod("getDefaultConfig").invoke(androidExt)
+                try {
+                    defCfg.javaClass.getMethod("setMinSdkVersion", Int::class.javaPrimitiveType).invoke(defCfg, 23)
+                } catch (_: Throwable) {}
+                try {
+                    defCfg.javaClass.getMethod("setTargetSdkVersion", Int::class.javaPrimitiveType).invoke(defCfg, 36)
+                } catch (_: Throwable) {}
+            } catch (_: Throwable) {}
+            try {
+                androidExt.javaClass.getMethod("setNdkVersion", String::class.java)
+                    .invoke(androidExt, "28.2.13676358")
+            } catch (_: Throwable) {}
+        }
+    }
+}
+EOF
+          echo "=== Tail of $SETTINGS ==="
+          tail -40 "$SETTINGS"
 
       - name: Install dependencies
         run: flutter pub get
