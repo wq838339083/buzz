@@ -9,16 +9,16 @@ void keepAliveTaskCallback() {
 
 class _KeepAliveHandler extends TaskHandler {
   @override
-  void onStart(DateTime timestamp, TaskStarter starter) {}
+  Future<void> onStart(DateTime timestamp, TaskStarter starter) async {}
 
   @override
   void onRepeatEvent(DateTime timestamp) {}
 
   @override
-  Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {}
+  Future<void> onDestroy(DateTime timestamp) async {}
 }
 
-class KeepAlive {
+class BuzzKeepAlive {
   static bool _inited = false;
 
   static Future<void> init() async {

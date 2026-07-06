@@ -51,7 +51,7 @@ class _BootstrapState extends State<_Bootstrap> {
   }
 
   Future<void> _decide() async {
-    await KeepAlive.init();
+    await BuzzKeepAlive.init();
     final token = await Storage.getToken();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(

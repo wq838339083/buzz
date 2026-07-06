@@ -31,8 +31,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<void> _init() async {
     await VibratorService.init();
-    await KeepAlive.init();
-    await KeepAlive.requestPermissions();
+    await BuzzKeepAlive.init();
+    await BuzzKeepAlive.requestPermissions();
 
     _patterns = await Storage.loadPatterns();
     _selected = _patterns.isNotEmpty ? _patterns.first : null;
@@ -59,7 +59,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       deviceName: deviceName,
     );
 
-    await KeepAlive.start();
+    await BuzzKeepAlive.start();
 
     setState(() {});
   }
@@ -129,7 +129,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<void> _logout() async {
     await _ws.disconnect();
-    await KeepAlive.stop();
+    await BuzzKeepAlive.stop();
     await Storage.clearSession();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
