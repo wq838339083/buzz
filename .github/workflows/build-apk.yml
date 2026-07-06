@@ -44,6 +44,39 @@ jobs:
             echo "Scaffold already exists"
           fi
 
+      - name: Bump Android compileSdk / targetSdk / minSdk / NDK
+        run: |
+          set -e
+          GRADLE_FILE=""
+          if [ -f "android/app/build.gradle.kts" ]; then
+            GRADLE_FILE="android/app/build.gradle.kts"
+          elif [ -f "android/app/build.gradle" ]; then
+            GRADLE_FILE="android/app/build.gradle"
+          else
+            echo "No build.gradle found under android/app/"
+            exit 1
+          fi
+          echo "Patching $GRADLE_FILE"
+
+          # compileSdk / targetSdk -> 36 ; minSdk -> 23 ; ndkVersion -> 27.0.12077973
+          sed -i \
+            -e 's/compileSdk *= *flutter\.compileSdkVersion/compileSdk = 36/g' \
+            -e 's/compileSdkVersion *flutter\.compileSdkVersion/compileSdkVersion 36/g' \
+            -e 's/compileSdk *= *[0-9]\+/compileSdk = 36/g' \
+            -e 's/compileSdkVersion *[0-9]\+/compileSdkVersion 36/g' \
+            -e 's/targetSdk *= *flutter\.targetSdkVersion/targetSdk = 36/g' \
+            -e 's/targetSdkVersion *flutter\.targetSdkVersion/targetSdkVersion 36/g' \
+            -e 's/targetSdk *= *[0-9]\+/targetSdk = 36/g' \
+            -e 's/targetSdkVersion *[0-9]\+/targetSdkVersion 36/g' \
+            -e 's/minSdk *= *flutter\.minSdkVersion/minSdk = 23/g' \
+            -e 's/minSdkVersion *flutter\.minSdkVersion/minSdkVersion 23/g' \
+            -e 's/ndkVersion *= *flutter\.ndkVersion/ndkVersion = "27.0.12077973"/g' \
+            -e 's/ndkVersion *flutter\.ndkVersion/ndkVersion "27.0.12077973"/g' \
+            "$GRADLE_FILE"
+
+          echo "=== Patched sections ==="
+          grep -nE 'compileSdk|targetSdk|minSdk|ndkVersion' "$GRADLE_FILE" || true
+
       - name: Install dependencies
         run: flutter pub get
 
