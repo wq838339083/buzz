@@ -1,0 +1,45 @@
+# ---- Flutter / Dart ----
+client/.dart_tool/
+client/.flutter-plugins
+client/.flutter-plugins-dependencies
+client/.pub-cache/
+client/.pub/
+client/build/
+client/dist/
+client/pubspec.lock
+client/.metadata
+client/.idea/
+client/*.iml
+
+# Android
+client/android/.gradle/
+client/android/gradle/
+client/android/gradlew
+client/android/gradlew.bat
+client/android/local.properties
+client/android/**/GeneratedPluginRegistrant.java
+client/android/key.properties
+client/android/app/debug/
+client/android/app/profile/
+client/android/app/release/
+client/android/.kotlin/
+client/android/captures/
+
+# ---- PHP / Composer ----
+server/vendor/
+server/composer.lock
+server/*.log
+
+# ---- Editor / OS ----
+.claude/
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Runtime ----
+*.pid
+*.sock

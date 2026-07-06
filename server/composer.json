@@ -1,0 +1,12 @@
+{
+    "name": "buzz/server",
+    "description": "Buzz vibration signal server (Workerman)",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "workerman/workerman": "^4.1"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
