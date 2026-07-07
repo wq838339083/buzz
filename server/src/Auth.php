@@ -4,8 +4,6 @@ namespace Buzz;
 
 class Auth
 {
-    private static array $tokens = [];
-
     public static function register(string $username, string $password): array
     {
         $username = trim($username);
@@ -33,11 +31,7 @@ class Auth
             throw new \RuntimeException('wrong password');
         }
         $token = bin2hex(random_bytes(24));
-        self::$tokens[$token] = [
-            'user_id'  => (int)$user['id'],
-            'username' => $user['username'],
-            'ts'       => time(),
-        ];
+        Db::insertToken($token, (int)$user['id'], $user['username']);
         return [
             'token'    => $token,
             'userId'   => (int)$user['id'],
@@ -47,11 +41,16 @@ class Auth
 
     public static function verify(string $token): ?array
     {
-        return self::$tokens[$token] ?? null;
+        $row = Db::findToken($token);
+        if (!$row) return null;
+        return [
+            'user_id'  => (int)$row['user_id'],
+            'username' => $row['username'],
+        ];
     }
 
     public static function revoke(string $token): void
     {
-        unset(self::$tokens[$token]);
+        Db::deleteToken($token);
     }
 }

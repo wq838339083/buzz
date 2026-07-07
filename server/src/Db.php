@@ -62,6 +62,37 @@ class Db
                 KEY idx_user (user_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
+        self::$pdo->exec("
+            CREATE TABLE IF NOT EXISTS tokens (
+                token VARCHAR(64) PRIMARY KEY,
+                user_id INT UNSIGNED NOT NULL,
+                username VARCHAR(64) NOT NULL,
+                created_at BIGINT NOT NULL,
+                KEY idx_user (user_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
+    }
+
+    public static function insertToken(string $token, int $userId, string $username): void
+    {
+        $stmt = self::pdo()->prepare(
+            'INSERT INTO tokens (token, user_id, username, created_at) VALUES (?, ?, ?, ?)'
+        );
+        $stmt->execute([$token, $userId, $username, (int)(microtime(true) * 1000)]);
+    }
+
+    public static function findToken(string $token): ?array
+    {
+        $stmt = self::pdo()->prepare('SELECT user_id, username FROM tokens WHERE token = ?');
+        $stmt->execute([$token]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public static function deleteToken(string $token): void
+    {
+        $stmt = self::pdo()->prepare('DELETE FROM tokens WHERE token = ?');
+        $stmt->execute([$token]);
     }
 
     public static function createUser(string $username, string $hash): int

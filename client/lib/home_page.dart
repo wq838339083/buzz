@@ -51,6 +51,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _ws.onBuzzReceived = _onBuzz;
     _ws.onBuzzAck = _onAck;
     _ws.onBuzzSent = _onSent;
+    _ws.onAuthRejected = _onAuthRejected;
     _ws.addListener(_onWsChanged);
 
     await _ws.connect(
@@ -65,6 +66,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   void _onWsChanged() => setState(() {});
+
+  Future<void> _onAuthRejected() async {
+    await BuzzKeepAlive.stop();
+    await Storage.clearSession();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('登录已失效，请重新登录')),
+    );
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+    );
+  }
 
   void _onBuzz(BuzzEvent e) {
     VibratorService.play(e.pattern, intensity: e.intensity);

@@ -55,8 +55,10 @@ class WsService extends ChangeNotifier {
   BuzzHandler? onBuzzReceived;
   void Function(String buzzId, String byDevice, String byName)? onBuzzAck;
   void Function(String buzzId, int delivered)? onBuzzSent;
+  void Function()? onAuthRejected;
 
   bool _disposed = false;
+  int _closesWithoutMessage = 0;
 
   Future<void> connect({
     required String token,
@@ -83,14 +85,33 @@ class WsService extends ChangeNotifier {
     try {
       final ch = WebSocketChannel.connect(Uri.parse(url));
       _ch = ch;
+      bool receivedAnyMessage = false;
       ch.stream.listen(
-        _onMessage,
+        (data) {
+          receivedAnyMessage = true;
+          _closesWithoutMessage = 0;
+          _onMessage(data);
+        },
         onError: (e) {
           debugPrint('WS error: $e');
+          if (!receivedAnyMessage) _closesWithoutMessage++;
           _handleDisconnect();
         },
         onDone: () {
-          debugPrint('WS closed');
+          debugPrint('WS closed (receivedAnyMessage=$receivedAnyMessage, closesWithoutMessage=$_closesWithoutMessage)');
+          if (!receivedAnyMessage) {
+            _closesWithoutMessage++;
+            if (_closesWithoutMessage >= 3) {
+              debugPrint('WS: 3 closes without any message — token likely invalid, signaling auth rejection');
+              _closesWithoutMessage = 0;
+              _disposed = true;
+              _pingTimer?.cancel();
+              _reconnectTimer?.cancel();
+              _setState(ConnState.disconnected);
+              onAuthRejected?.call();
+              return;
+            }
+          }
           _handleDisconnect();
         },
         cancelOnError: true,

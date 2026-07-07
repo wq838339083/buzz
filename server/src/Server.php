@@ -117,10 +117,13 @@ class Server
 
     private function onWsConnect(TcpConnection $conn, string $header): void
     {
+        echo "[Buzz] onWsConnect from " . $conn->getRemoteIp() . "\n";
         if (!preg_match("#GET (.*?) HTTP/#", $header, $m)) {
+            echo "[Buzz] REJECT: no GET line in header\n";
             $conn->close();
             return;
         }
+        echo "[Buzz] GET line: " . $m[1] . "\n";
         $parts = parse_url($m[1]);
         $query = [];
         if (isset($parts['query'])) parse_str($parts['query'], $query);
@@ -128,12 +131,20 @@ class Server
         $token = $query['token'] ?? '';
         $deviceId = $query['device_id'] ?? '';
         $deviceName = $query['device_name'] ?? 'unknown';
+        echo "[Buzz] token=" . substr($token, 0, 8) . "... device_id=$deviceId device_name=$deviceName\n";
 
         $session = $token ? Auth::verify($token) : null;
-        if (!$session || !$deviceId) {
+        if (!$session) {
+            echo "[Buzz] REJECT: token verify failed (token unknown to this process)\n";
             $conn->close();
             return;
         }
+        if (!$deviceId) {
+            echo "[Buzz] REJECT: missing device_id\n";
+            $conn->close();
+            return;
+        }
+        echo "[Buzz] token OK user_id={$session['user_id']} username={$session['username']}\n";
 
         $conn->userId = $session['user_id'];
         $conn->username = $session['username'];
